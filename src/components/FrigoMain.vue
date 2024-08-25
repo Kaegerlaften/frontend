@@ -33,7 +33,7 @@
 
     const addContent = () => {
         const newName = prompt('Entrez le nom du contenu :');
-        const newQte = parseInt(prompt('Entrez la quantité :') || '0', y);
+        const newQte = parseInt(prompt('Entrez la quantité :') || '0', 10);
         const newImage = prompt('Entrez le chemin de l\'image :') || '';
 
     async function addContentAsync() {
