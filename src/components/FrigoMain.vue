@@ -1,13 +1,10 @@
 <script setup>
-    import { ref, reactive, onMounted } from "vue";
+    import { ref, computed, reactive, onMounted } from "vue";
     import Content from "@/Content.js";
 
+    const searchQuery = ref('');
     const listContent = reactive([]);
-    const url = "https://webmmi.iut-tlse3.fr/~pecatte/frigo/public/7/produits";
-
-    const tmpName = ref();
-    const tmpQte = ref();
-    const tmpPhoto = ref();
+    const url = "http://apifrigo.pecatte.fr/api/1/produits";
 
     function searchContent() {
         const fetchOptions = { method: "GET" };
@@ -16,10 +13,12 @@
             return response.json();
         })
         .then((dataJSON) => {
-            let contents = dataJSON;
+            const contents = dataJSON;
             listContent.splice(0, listContent.length);
             for (let contentjson of contents) {
-                listContent.push(new Content(contentjson.nom, contentjson.photo, contentjson.qte, contentjson.id));
+                var spePhoto = contentjson.photo.replace("\\", "").replace(".webp", ".jpg")
+                listContent.push(new Content(contentjson.nom, spePhoto, contentjson.qte, contentjson.id));
+                console.log(spePhoto);
             }
         })
         .catch((error) => {
@@ -27,14 +26,32 @@
         });
     }
 
-    async function addContent(addedContent) {
-        const postOptions = {
+    const filteredContent = computed(() =>
+        listContent.filter(c =>
+            c.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
+
+    const addContent = () => {
+        const newName = prompt('Entrez le nom du contenu :');
+        const newQte = parseInt(prompt('Entrez la quantité :') || '0', y);
+        const newImage = prompt('Entrez le chemin de l\'image :') || '';
+
+    async function addContentAsync() {
+        const pushOptions = {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(addedContent)
+            body: (newName + newQte + newImage).json
         };
-        await fetch(url, postOptions);
+        await fetch(url, pushOptions);
     }
+
+        if (newName && !isNaN(newQte)) {
+            addContentAsync();
+        } else {
+            alert('Veuillez entrer un nom valide et une quantité.');
+        }
+    };
 
     onMounted(() => {
         searchContent();    // Rempli listComponent des infos tirées du JSON
@@ -44,46 +61,95 @@
 </script>
 
 <template>
-    <v-card>
-        <v-row dense>
-            <v-col height="200" cols="12" sm="6" md="3" lg="2">
-                <v-card color="primary">                    
-                    <v-icon size="248" @click="dialog = true">mdi-plus</v-icon>
-                </v-card>
-            </v-col>
-            <v-col v-for="c in listContent" :key="c.id" cols="12" sm="6" md="3" lg="2">
-                <v-card color="primary">
-                    <v-img :src="c.photo" height="200">
-                    </v-img>
-                    <v-card-title>
-                        {{ c.name }} : {{ c.qte }}
-                    </v-card-title>
-                </v-card>
-            </v-col>
-        </v-row>
-    </v-card>
-    <v-dialog v-model="dialog" max-width="600">
-        <v-card>
-            <v-card-title>Ajout de contenu dans le frigidaire</v-card-title>
-            <v-form>
-                <v-text-field v-model="tmpName" label="Nom"></v-text-field>
-            </v-form>
-            <v-form>
-                <v-text-field v-model="tmpQte" label="Quantité"></v-text-field>
-            </v-form>
-            <v-form>
-                <v-text-field v-model="tmpPhoto" label="Lien vers la photo"></v-text-field>
-            </v-form>
-            <v-card-actions>
-                <v-btn color="primary" @click="dialog = false; addContent({tmpName, tmpQte, tmpPhoto})">Ajouter</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
+    <header>
+      <input type="text" v-model="searchQuery" placeholder="🔍 Rechercher" />
+    </header>
+    <div class="card-container">
+        <div class="card add-card" @click="addContent">
+            <span>+</span>
+        </div>
+        <div v-for="c in filteredContent" :key="c.name" class="card">
+            <img :src="c.image" alt="content's image" class="content-image" />
+            <div class="content-info">
+                {{ c.name }} : {{ c.quantity }}
+                <button @click="removeContent(c.name)" class="delete-button">
+                x
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
-<style scoped>
-.image {
-  width: 200px;
-  height: 300px;
+<style>
+.app {
+  background-color: #1e1e1e;
+  color: white;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 300px;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  outline: none;
+}
+
+.card-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background-color: #2196f3;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 150px;
+  height: 200px;
+  box-sizing: border-box;
+  text-align: center;
+  position: relative;
+}
+
+.add-card {
+  cursor: pointer;
+  font-size: 40px;
+}
+
+.content-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.content-info {
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.delete-button {
+  background-color: red;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  position: absolute;
+  bottom: 10px;
 }
 </style>
