@@ -18,7 +18,6 @@
             for (let contentjson of contents) {
                 var spePhoto = contentjson.photo.replace("\\", "").replace(".webp", ".jpg")
                 listContent.push(new Content(contentjson.nom, spePhoto, contentjson.qte, contentjson.id));
-                console.log(spePhoto);
             }
         })
         .catch((error) => {
@@ -28,7 +27,7 @@
 
     const filteredContent = computed(() =>
         listContent.filter(c =>
-            c.name.toLowerCase().includes(searchQuery.toLowerCase())
+            c.name.toLowerCase().includes(searchQuery.value.toLowerCase())
         )
     );
 
@@ -69,9 +68,9 @@
             <span>+</span>
         </div>
         <div v-for="c in filteredContent" :key="c.name" class="card">
-            <img :src="c.image" alt="content's image" class="content-image" />
+            <img :src="c.photo" alt="content's image" class="content-image" />
             <div class="content-info">
-                {{ c.name }} : {{ c.quantity }}
+                {{ c.name }} : {{ c.qte }}
                 <button @click="removeContent(c.name)" class="delete-button">
                 x
                 </button>
